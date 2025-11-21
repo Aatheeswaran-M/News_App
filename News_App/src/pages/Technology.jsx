@@ -7,6 +7,7 @@ export default function Technology(){
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const load = useCallback(async (q = '', append = false) => {
     setLoading(true);
@@ -31,13 +32,27 @@ export default function Technology(){
       if (!res || res.length === 0) {
         setError('No technology articles found. Please try again later.');
       }
+      setRetryCount(0); // Reset retry count on success
     } catch (err) {
-      setError('Failed to fetch technology news. Please check your connection.');
       console.error('Technology page load error:', err);
+      const errorMessage = err.response?.status === 429 
+        ? 'API rate limit reached. Please try again in a few minutes.'
+        : 'Failed to fetch technology news. Please check your connection.';
+      
+      setError(errorMessage);
       if (!append) setNews([]);
+      
+      // Auto-retry logic
+      if (retryCount < 3 && (!err.response || err.response.status >= 500)) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          load(q, append);
+        }, delay);
+      }
     }
     setLoading(false);
-  }, []);
+  }, [retryCount]);
 
   useEffect(() => {
     let mounted = true;

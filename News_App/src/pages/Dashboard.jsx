@@ -10,6 +10,7 @@ export default function Dashboard() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const load = useCallback(async (q = '', append = false) => {
     setLoading(true);
@@ -39,14 +40,28 @@ export default function Dashboard() {
       if (!res || res.length === 0) {
         setError('No articles found. The API might be rate-limited or the query returned no results.');
       }
+      setRetryCount(0); // Reset retry count on success
     } catch (err) {
-      setError('Failed to fetch news. Please check your connection and try again.');
       console.error('Dashboard load error:', err);
+      const errorMessage = err.response?.status === 429 
+        ? 'API rate limit reached. Please try again in a few minutes.'
+        : 'Failed to fetch news. Please check your connection and try again.';
+      
+      setError(errorMessage);
       // Set empty array to prevent undefined errors
       if (!append) setNews([]);
+      
+      // Auto-retry logic for certain errors
+      if (retryCount < 3 && (!err.response || err.response.status >= 500)) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          load(q, append);
+        }, delay);
+      }
     }
     setLoading(false);
-  }, []); // Remove news dependency to prevent infinite re-renders
+  }, [retryCount]); // Include retryCount in dependencies
 
   useEffect(() => { 
     let mounted = true;

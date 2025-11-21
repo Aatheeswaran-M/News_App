@@ -12,7 +12,7 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log the error to an error reporting service
+    // You can log the error to an error reporting service here
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({
       error: error,
@@ -20,37 +20,60 @@ class ErrorBoundary extends React.Component {
     });
   }
 
-  handleRetry = () => {
-    this.setState({ 
-      hasError: false, 
-      error: null, 
-      errorInfo: null 
-    });
-    // Refresh the page as a fallback
-    window.location.reload();
-  };
-
   render() {
     if (this.state.hasError) {
+      // Custom fallback UI
       return (
         <div className="error-boundary">
-          <div className="error-container">
-            <h2>🚨 Something went wrong</h2>
-            <p>The application encountered an unexpected error.</p>
-            <details style={{ whiteSpace: 'pre-wrap', marginTop: '20px' }}>
-              <summary>Error Details (Click to expand)</summary>
-              <p><strong>Error:</strong> {this.state.error && this.state.error.toString()}</p>
-              <p><strong>Stack trace:</strong></p>
-              <pre>{this.state.errorInfo.componentStack}</pre>
+          <div style={{
+            padding: '2rem',
+            margin: '2rem auto',
+            maxWidth: '600px',
+            textAlign: 'center',
+            border: '1px solid #e1e5e9',
+            borderRadius: '8px',
+            backgroundColor: '#f8f9fa'
+          }}>
+            <h2 style={{ color: '#d73a49', marginBottom: '1rem' }}>
+              Something went wrong
+            </h2>
+            <p style={{ color: '#586069', marginBottom: '1.5rem' }}>
+              The application encountered an unexpected error. Please refresh the page or try again later.
+            </p>
+            <details style={{ 
+              textAlign: 'left', 
+              backgroundColor: '#f1f8ff', 
+              padding: '1rem', 
+              borderRadius: '6px',
+              marginBottom: '1rem'
+            }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                Error Details (Click to expand)
+              </summary>
+              <pre style={{ 
+                fontSize: '0.875rem', 
+                color: '#d73a49',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }}>
+                {this.state.error && this.state.error.toString()}
+                {this.state.errorInfo && this.state.errorInfo.componentStack}
+              </pre>
             </details>
-            <div className="error-actions">
-              <button onClick={this.handleRetry} className="retry-button">
-                🔄 Retry
-              </button>
-              <button onClick={() => window.location.href = '/'} className="home-button">
-                🏠 Go Home
-              </button>
-            </div>
+            <button 
+              onClick={() => window.location.reload()} 
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#0366d6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '1rem'
+              }}
+            >
+              Refresh Page
+            </button>
           </div>
         </div>
       );

@@ -99,6 +99,44 @@ const checkDailyReset = () => {
   }
 };
 
+// Enhanced error handling with retry logic
+const handleApiError = (error, keyInfo) => {
+  console.error('API Error:', error);
+  
+  if (!error.response) {
+    // Network error - retry with exponential backoff
+    console.log('Network error detected, will retry');
+    return { shouldRetry: true, blockKey: false };
+  }
+
+  const status = error.response.status;
+  
+  if (status === 429) {
+    // Rate limit - block this key temporarily
+    const blockDuration = 60 * 60 * 1000; // 1 hour
+    apiData.blockedUntil[keyInfo.index] = Date.now() + blockDuration;
+    console.log(`API key ${keyInfo.index} blocked due to rate limit for 1 hour`);
+    saveStoredData(apiData);
+    return { shouldRetry: true, blockKey: true };
+  }
+  
+  if (status >= 500) {
+    // Server error - retry
+    return { shouldRetry: true, blockKey: false };
+  }
+  
+  if (status === 401 || status === 403) {
+    // Authentication error - block key permanently for this session
+    apiData.blockedUntil[keyInfo.index] = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    console.log(`API key ${keyInfo.index} blocked due to authentication error`);
+    saveStoredData(apiData);
+    return { shouldRetry: true, blockKey: true };
+  }
+  
+  // Client error (4xx) - don't retry
+  return { shouldRetry: false, blockKey: false };
+};
+
 const isKeyBlocked = (index) => {
   const until = apiData.blockedUntil && apiData.blockedUntil[index];
   return typeof until === 'number' && Date.now() < until;
