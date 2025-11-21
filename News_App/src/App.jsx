@@ -15,10 +15,13 @@ import './index.css';
 import './App.css';
 
 export default function App(){
+  const basename = import.meta.env.MODE === 'production' ? '/news' : '';
+  
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <BrowserRouter
+          basename={basename}
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true
